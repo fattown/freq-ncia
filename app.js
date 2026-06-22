@@ -34,6 +34,7 @@
   // ---------- Level definitions ----------
   // Each level defines: source type ('synth-pink' | 'synth-tone' | 'synth-instrument' | 'user-file'),
   // frequency range to draw boosts from, gain range, Q range, and a hint string.
+  // Adjusted gain ranges to align with typical ear-training practices (roughly +6 dB to +12 dB progression).
   const LEVELS = [
     {
       id: 'l1',
@@ -41,7 +42,7 @@
       desc: 'Wide boosts, easy range',
       sourceType: 'synth-pink',
       freqRange: [100, 8000],
-      gainRange: [8, 14],
+      gainRange: [10, 14],   // beginner: quite obvious
       qRange: [0.8, 1.2],
       guessGain: false,
       hint: 'Pink noise has equal energy per octave, so a boost stands out as a clear "bump" in tone. Sweep the slider and listen for where the noise gets harsher, boxier, or more piercing.'
@@ -52,7 +53,7 @@
       desc: 'Tighter boosts, full range',
       sourceType: 'synth-pink',
       freqRange: [40, 16000],
-      gainRange: [6, 12],
+      gainRange: [8, 12],    // intermediate
       qRange: [1.5, 3],
       guessGain: false,
       hint: 'Same idea, but the boost is narrower (higher Q) and can land anywhere from sub-bass to air. Narrower boosts are harder to localize — listen for resonance, not just loudness.'
@@ -63,10 +64,10 @@
       desc: 'Identify boosted tone by ear',
       sourceType: 'synth-tone',
       freqRange: [60, 12000],
-      gainRange: [6, 12],
+      gainRange: [6, 10],     // advanced-ish pitch recall
       qRange: [1, 2],
       guessGain: false,
-      hint: 'You\'ll hear a single boosted sine-ish tone. There\'s no "find the bump" — you\'re training raw pitch-to-frequency recall. Try humming the pitch and thinking what note/frequency that is.'
+      hint: 'You\'ll hear a single boosted sine-ish tone. There\'s no "find the bump" — you\'re training raw pitch-to-frequency recall. Try humming the pitch and thinking what note/frequency tha...'
     },
     {
       id: 'l4',
@@ -74,10 +75,10 @@
       desc: 'Synth instrument loops, EQ\'d',
       sourceType: 'synth-instrument',
       freqRange: [80, 10000],
-      gainRange: [6, 12],
+      gainRange: [6, 10],
       qRange: [1, 2.2],
       guessGain: false,
-      hint: 'A simple synthesized instrument loop (pad, pluck, or bass) plays with a boost applied. Real instruments have harmonic content, so the boost interacts with existing overtones — it may sound "honky," "nasal," or "boomy" rather than purely louder.'
+      hint: 'A simple synthesized instrument loop (pad, pluck, or bass) plays with a boost applied. Real instruments have harmonic content, so the boost interacts with existing overtones — it ma...'
     },
     {
       id: 'l5',
@@ -85,7 +86,7 @@
       desc: 'Guess frequency AND boost amount',
       sourceType: 'synth-instrument',
       freqRange: [80, 10000],
-      gainRange: [4, 16],
+      gainRange: [4, 10],     // allow lower boosts when guessing gain
       qRange: [1, 2.2],
       guessGain: true,
       hint: 'Same as before, but now also estimate how many dB the boost is. Subtle boosts (4–6 dB) are much harder to hear than aggressive ones (12+ dB).'
@@ -96,10 +97,10 @@
       desc: 'Load your own well-mixed reference tracks',
       sourceType: 'user-file',
       freqRange: [60, 14000],
-      gainRange: [4, 10],
+      gainRange: [4, 8],      // realistic tweaks for real mixes
       qRange: [0.9, 1.8],
       guessGain: true,
-      hint: 'Load tracks you know are well mixed/mastered — a single file, a whole folder, or a .zip of your reference library. Each track gets an automatically-picked loop window (it looks for the loudest, most stable 14 seconds rather than starting cold on an intro or fade), which you can still drag to adjust. The app applies a boost to a random frequency and you try to find where it needs a cut to get back to "well mixed." This is the real test — full mix, real instruments, real masking.'
+      hint: 'Load tracks you know are well mixed/mastered — a single file, a whole folder, or a .zip of your reference library. Each track gets an automatically-picked loop window (it looks for...'
     }
   ];
 
@@ -109,7 +110,8 @@
     audioCtx: null,
     sourceNode: null,       // AudioBufferSourceNode or oscillator/noise node
     eqFilter: null,         // BiquadFilterNode (peaking)
-    analyser: null,
+    analyser: null,         // post-EQ analyser (used after reveal)
+    preAnalyser: null,      // pre-EQ analyser (used before reveal to hide the boosted bump)
     gainNode: null,
     isPlaying: false,
     isBoostedVersion: true, // which version is currently audible
@@ -274,6 +276,8 @@
   }
 
   // Build the persistent processing graph: source -> eqFilter -> analyser -> gain -> destination
+  // We also add a preAnalyser tapped directly from the source so we can hide the boosted bump
+  // visually until the round is resolved (preAnalyser shows the flat spectrum).
   function buildGraphAndPlay(buffer) {
     const ctx = ensureAudioCtx();
     teardownSource();
@@ -291,6 +295,12 @@
       state.analyser.fftSize = 2048;
       state.analyser.smoothingTimeConstant = 0.75;
     }
+    // preAnalyser listens to the source before the EQ so the visualizer can show the flat signal
+    if (!state.preAnalyser) {
+      state.preAnalyser = ctx.createAnalyser();
+      state.preAnalyser.fftSize = state.analyser.fftSize;
+      state.preAnalyser.smoothingTimeConstant = state.analyser.smoothingTimeConstant;
+    }
     if (!state.gainNode) {
       state.gainNode = ctx.createGain();
       state.gainNode.gain.value = 0.9;
@@ -300,6 +310,9 @@
     state.eqFilter.Q.value = state.round.targetQ;
     state.eqFilter.gain.value = state.isBoostedVersion ? state.round.targetGain : 0;
 
+    // connect: source -> preAnalyser (for visual only)
+    source.connect(state.preAnalyser);
+    // connect: source -> eqFilter -> analyser -> gain -> destination (audio path)
     source.connect(state.eqFilter);
     state.eqFilter.connect(state.analyser);
     state.analyser.connect(state.gainNode);
@@ -364,34 +377,37 @@
     });
 
     // live analyser data
-    if (state.analyser && state.isPlaying) {
-      const bufferLen = state.analyser.frequencyBinCount;
-      const data = new Uint8Array(bufferLen);
-      state.analyser.getByteFrequencyData(data);
-      const nyquist = state.audioCtx.sampleRate / 2;
+    if ((state.analyser || state.preAnalyser) && state.isPlaying) {
+      const analyserToUse = state.round.resolved ? state.analyser : state.preAnalyser;
+      if (analyserToUse) {
+        const bufferLen = analyserToUse.frequencyBinCount;
+        const data = new Uint8Array(bufferLen);
+        analyserToUse.getByteFrequencyData(data);
+        const nyquist = state.audioCtx.sampleRate / 2;
 
-      canvasCtx.beginPath();
-      canvasCtx.moveTo(0, h);
-      for (let i = 0; i < bufferLen; i++) {
-        const freq = (i / bufferLen) * nyquist;
-        if (freq < FREQ_MIN) continue;
-        if (freq > FREQ_MAX) break;
-        const x = freqToX(freq, w);
-        const amp = data[i] / 255;
-        const y = h - amp * h * 0.92;
-        canvasCtx.lineTo(x, y);
+        canvasCtx.beginPath();
+        canvasCtx.moveTo(0, h);
+        for (let i = 0; i < bufferLen; i++) {
+          const freq = (i / bufferLen) * nyquist;
+          if (freq < FREQ_MIN) continue;
+          if (freq > FREQ_MAX) break;
+          const x = freqToX(freq, w);
+          const amp = data[i] / 255;
+          const y = h - amp * h * 0.92;
+          canvasCtx.lineTo(x, y);
+        }
+        canvasCtx.lineTo(w, h);
+        canvasCtx.closePath();
+
+        const grad = canvasCtx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, 'rgba(255,106,61,0.55)');
+        grad.addColorStop(1, 'rgba(255,106,61,0.02)');
+        canvasCtx.fillStyle = grad;
+        canvasCtx.fill();
+        canvasCtx.strokeStyle = 'rgba(255,106,61,0.9)';
+        canvasCtx.lineWidth = 1.5 * dpr;
+        canvasCtx.stroke();
       }
-      canvasCtx.lineTo(w, h);
-      canvasCtx.closePath();
-
-      const grad = canvasCtx.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0, 'rgba(255,106,61,0.55)');
-      grad.addColorStop(1, 'rgba(255,106,61,0.02)');
-      canvasCtx.fillStyle = grad;
-      canvasCtx.fill();
-      canvasCtx.strokeStyle = 'rgba(255,106,61,0.9)';
-      canvasCtx.lineWidth = 1.5 * dpr;
-      canvasCtx.stroke();
     } else {
       // flat idle line
       canvasCtx.strokeStyle = 'rgba(255,255,255,0.12)';
@@ -814,7 +830,7 @@
     state.round.targetQ = randRange(lvl.qRange[0], lvl.qRange[1]);
     state.round.guessFreq = null;
     state.round.guessGain = null;
-    state.round.resolved = false;
+    state.round.resolved = false; // ensure visualizer uses pre-filter analyser until submit
     state.isBoostedVersion = true;
 
     const ctx = ensureAudioCtx();
@@ -876,7 +892,7 @@
     const guessGain = lvl.guessGain ? parseFloat(el.gainSlider.value) : null;
     state.round.guessFreq = guessFreq;
     state.round.guessGain = guessGain;
-    state.round.resolved = true;
+    state.round.resolved = true; // reveal visualizer target after submit
 
     const err = octaveError(guessFreq, state.round.targetFreq);
     const verdict = verdictForOctaveError(err);
