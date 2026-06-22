@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Freqüència — EQ Ear Trainer</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="rack">
+
+  <!-- ===== HEADER / RACK STRIP ===== -->
+  <header class="strip">
+    <div class="brand">
+      <span class="brand-mark">F</span>
+      <div class="brand-text">
+        <h1>Freqüència</h1>
+        <p>ear trainer for frequency &amp; gain</p>
+      </div>
+    </div>
+    <div class="session-stats">
+      <div class="stat">
+        <span class="stat-value" id="stat-streak">0</span>
+        <span class="stat-label">streak</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value" id="stat-score">0 / 0</span>
+        <span class="stat-label">session</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value" id="stat-avg">—</span>
+        <span class="stat-label">avg error</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== LEVEL SELECT ===== -->
+  <nav class="levels" id="level-nav" aria-label="Training levels">
+    <!-- populated by JS -->
+  </nav>
+
+  <main class="deck">
+
+    <!-- ===== LEFT: SOURCE / TRACKLIST ===== -->
+    <section class="panel source-panel">
+      <h2 class="panel-title">Source <span class="panel-sub" id="level-name">—</span></h2>
+
+      <div id="source-controls" class="source-controls">
+        <!-- populated by JS depending on level (file input vs built-in) -->
+      </div>
+
+      <div class="now-playing" id="now-playing">
+        <span class="np-dot" id="np-dot"></span>
+        <span id="np-label">No source loaded</span>
+      </div>
+
+      <div class="transport">
+        <button id="btn-play" class="btn btn-play" disabled>▶ Play loop</button>
+        <button id="btn-toggle-version" class="btn btn-ghost" disabled>A/B: Boosted</button>
+        <div class="loop-range" id="loop-range-wrap" style="display:none;">
+          <label>Loop window (auto-picked — drag to adjust)
+            <input type="range" id="loop-start" min="0" max="100" value="0" step="0.5">
+          </label>
+        </div>
+      </div>
+
+      <div class="hint" id="level-hint"></div>
+    </section>
+
+    <!-- ===== CENTER: SPECTRUM GUESS DIAL ===== -->
+    <section class="panel guess-panel">
+      <h2 class="panel-title">Where's the boost?</h2>
+
+      <div class="spectrum-wrap">
+        <canvas id="spectrum-canvas" width="900" height="160" aria-label="Frequency spectrum, 20 Hz to 20 kHz, logarithmic"></canvas>
+        <div class="spectrum-ticks" id="spectrum-ticks"></div>
+      </div>
+
+      <div class="freq-readout">
+        <span class="freq-readout-label">your guess</span>
+        <span class="freq-readout-value" id="guess-readout">— Hz</span>
+      </div>
+
+      <input type="range" id="freq-slider" class="freq-slider" min="0" max="1000" value="500" step="1">
+
+      <div class="gain-guess" id="gain-guess-wrap" style="display:none;">
+        <label for="gain-slider">Boost amount <span id="gain-readout">— dB</span></label>
+        <input type="range" id="gain-slider" min="1" max="18" value="6" step="0.5">
+      </div>
+
+      <button id="btn-submit" class="btn btn-submit" disabled>Lock in guess</button>
+
+      <div class="result" id="result-panel" aria-live="polite"></div>
+
+      <button id="btn-next" class="btn btn-next" style="display:none;">Next round →</button>
+    </section>
+
+    <!-- ===== RIGHT: LOG / HISTORY ===== -->
+    <aside class="panel log-panel">
+      <h2 class="panel-title">Round log</h2>
+      <ol class="log-list" id="log-list"></ol>
+      <p class="log-empty" id="log-empty">Your rounds will show up here as you play.</p>
+    </aside>
+
+  </main>
+
+  <footer class="rack-footer">
+    <p>Runs entirely in your browser. No audio is uploaded anywhere — local files stay local. <a href="https://github.com/" id="repo-link" target="_blank" rel="noopener">Source</a></p>
+  </footer>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
