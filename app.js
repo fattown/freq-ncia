@@ -29,84 +29,84 @@
     return Math.round(f) + ' Hz';
   }
   function randRange(min, max) { return min + Math.random() * (max - min); }
-  function choice(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
   // ---------- Level definitions ----------
-  // Each level defines: source type ('synth-pink' | 'synth-tone' | 'synth-instrument' | 'user-file'),
-  // frequency range to draw boosts from, gain range, Q range, and a hint string.
-  // Adjusted gain ranges to align with typical ear-training practices (roughly +6 dB to +12 dB progression).
+  // Levels with `difficulties` use fixed gain per chip (Golden Ears / Train Your Ears style).
+  // Levels with `gainRange` use a random gain within the range each round.
   const LEVELS = [
     {
       id: 'l1',
-      name: 'Pink noise',
-      desc: 'Wide boosts, easy range',
+      name: 'Pink noise — wide',
+      desc: 'Wide boosts (~1.5–2 oct), limited range',
       sourceType: 'synth-pink',
       freqRange: [100, 8000],
-      gainRange: [10, 14],   // beginner: quite obvious
-      qRange: [0.8, 1.2],
+      qRange: [0.7, 1.0],   // wide Q — more audible, easier to detect
+      difficulties: [
+        { label: 'Easy',   gain: 15, tag: '15 dB' },
+        { label: 'Medium', gain: 10, tag: '10 dB' },
+        { label: 'Hard',   gain:  6, tag:  '6 dB' },
+      ],
       guessGain: false,
-      hint: 'Pink noise has equal energy per octave, so a boost stands out as a clear "bump" in tone. Sweep the slider and listen for where the noise gets harsher, boxier, or more piercing.'
+      hint: 'Pink noise has equal energy per octave, so a wide boost stands out as a clear tonal shift. Listen for where the noise gets harsher (highs), nasal or boxy (mids), or rumbly (lows). Sweep slowly and compare the boosted vs flat version with A/B.',
     },
     {
       id: 'l2',
-      name: 'Pink noise (narrow)',
-      desc: 'Tighter boosts, full range',
+      name: 'Pink noise — narrow',
+      desc: 'Tight resonant boosts (~0.4–0.5 oct), full range',
       sourceType: 'synth-pink',
       freqRange: [40, 16000],
-      gainRange: [8, 12],    // intermediate
-      qRange: [1.5, 3],
+      qRange: [2.0, 3.5],   // narrow Q — harder to detect, more defined once found
+      difficulties: [
+        { label: 'Easy',   gain: 12, tag: '12 dB' },
+        { label: 'Medium', gain:  8, tag:  '8 dB' },
+        { label: 'Hard',   gain:  5, tag:  '5 dB' },
+      ],
       guessGain: false,
-      hint: 'Same idea, but the boost is narrower (higher Q) and can land anywhere from sub-bass to air. Narrower boosts are harder to localize — listen for resonance, not just loudness.'
+      hint: 'The boost is much narrower (~0.5 octave) and can land anywhere from sub-bass to air. Narrow boosts are harder to detect overall even at the same dB — they affect less of the signal. Listen for a distinct resonance or ringing character.',
     },
     {
       id: 'l3',
-      name: 'Sine sweep recall',
-      desc: 'Identify boosted tone by ear',
+      name: 'Sine tone recall',
+      desc: 'Identify a pure tone — raw pitch memory',
       sourceType: 'synth-tone',
       freqRange: [60, 12000],
-      gainRange: [6, 10],     // advanced-ish pitch recall
-      qRange: [1, 2],
+      qRange: [1.0, 1.0],
+      difficulties: [
+        { label: 'Easy',   gain: 12, tag: 'louder' },
+        { label: 'Medium', gain:  8, tag: 'clear'  },
+        { label: 'Hard',   gain:  5, tag: 'quiet'  },
+      ],
       guessGain: false,
-      hint: 'You\'ll hear a single boosted sine-ish tone. There\'s no "find the bump" — you\'re training raw pitch-to-frequency recall. Try humming the pitch and thinking what note/frequency tha...'
+      hint: 'A single pure sine tone plays — no noise, no spectrum hint (it\'s hidden until you submit). You\'re training raw pitch-to-frequency recall. Hum the pitch, think what note it might be, then find it on the slider.',
     },
     {
       id: 'l4',
-      name: 'Single instrument',
-      desc: 'Synth instrument loops, EQ\'d',
-      sourceType: 'synth-instrument',
-      freqRange: [80, 10000],
-      gainRange: [6, 10],
-      qRange: [1, 2.2],
+      name: 'Your mix',
+      desc: 'Load your own tracks — identify the boost',
+      sourceType: 'user-file',
+      freqRange: [60, 14000],
+      gainRange: [6, 9],
+      qRange: [0.9, 1.8],
       guessGain: false,
-      hint: 'A simple synthesized instrument loop (pad, pluck, or bass) plays with a boost applied. Real instruments have harmonic content, so the boost interacts with existing overtones — it ma...'
+      hint: 'Load tracks you know well — a well-mixed reference or your own project. Real audio has complex harmonic content that changes how a boost sounds compared to noise. This is the closest practice to actual mixing work.',
     },
     {
       id: 'l5',
-      name: 'Single instrument + gain',
+      name: 'Your mix + gain',
       desc: 'Guess frequency AND boost amount',
-      sourceType: 'synth-instrument',
-      freqRange: [80, 10000],
-      gainRange: [4, 10],     // allow lower boosts when guessing gain
-      qRange: [1, 2.2],
-      guessGain: true,
-      hint: 'Same as before, but now also estimate how many dB the boost is. Subtle boosts (4–6 dB) are much harder to hear than aggressive ones (12+ dB).'
-    },
-    {
-      id: 'l6',
-      name: 'Your mix (file)',
-      desc: 'Load your own well-mixed reference tracks',
       sourceType: 'user-file',
       freqRange: [60, 14000],
-      gainRange: [4, 8],      // realistic tweaks for real mixes
+      gainRange: [3, 6],
       qRange: [0.9, 1.8],
       guessGain: true,
-      hint: 'Load tracks you know are well mixed/mastered — a single file, a whole folder, or a .zip of your reference library. Each track gets an automatically-picked loop window (it looks for...'
-    }
+      hint: 'Same as Level 4, but now also estimate the dB amount. Subtle boosts (3–4 dB) are much harder to hear than heavy ones. Use the A/B toggle to compare and refine your gain estimate.',
+    },
   ];
 
   // ---------- State ----------
   const state = {
     levelIdx: 0,
+    selectedDifficulty: null, // { label, gain, tag } — set from level.difficulties; null for levels without presets
     audioCtx: null,
     sourceNode: null,       // AudioBufferSourceNode or oscillator/noise node
     eqFilter: null,         // BiquadFilterNode (peaking)
@@ -203,74 +203,15 @@
     return buffer;
   }
 
-  // Simple synthesized "instrument" loops so we don't need to bundle audio files.
-  // Each is rendered to a buffer using OfflineAudioContext once, then reused.
-  async function makeInstrumentBuffer(kind, seconds = 4) {
-    const ctx = new OfflineAudioContext(2, Math.floor(44100 * seconds), 44100);
-    const notes = [220, 277.18, 329.63, 220]; // A3 C#4 E4 A3 — simple loop
-    const noteLen = seconds / notes.length;
-
-    if (kind === 'pad') {
-      notes.forEach((freq, i) => {
-        const t0 = i * noteLen;
-        [1, 2, 3].forEach((mult, h) => {
-          const osc = ctx.createOscillator();
-          osc.type = 'sawtooth';
-          osc.frequency.value = freq * mult * 0.5;
-          const g = ctx.createGain();
-          const peak = 0.18 / mult;
-          g.gain.setValueAtTime(0, t0);
-          g.gain.linearRampToValueAtTime(peak, t0 + noteLen * 0.3);
-          g.gain.linearRampToValueAtTime(0, t0 + noteLen * 0.98);
-          osc.connect(g).connect(ctx.destination);
-          osc.start(t0);
-          osc.stop(t0 + noteLen);
-        });
-      });
-    } else if (kind === 'pluck') {
-      notes.forEach((freq, i) => {
-        const t0 = i * noteLen;
-        const osc = ctx.createOscillator();
-        osc.type = 'triangle';
-        osc.frequency.value = freq * 2;
-        const g = ctx.createGain();
-        g.gain.setValueAtTime(0.4, t0);
-        g.gain.exponentialRampToValueAtTime(0.001, t0 + noteLen * 0.9);
-        osc.connect(g).connect(ctx.destination);
-        osc.start(t0);
-        osc.stop(t0 + noteLen);
-      });
-    } else if (kind === 'bass') {
-      notes.forEach((freq, i) => {
-        const t0 = i * noteLen;
-        const osc = ctx.createOscillator();
-        osc.type = 'square';
-        osc.frequency.value = freq * 0.5;
-        const g = ctx.createGain();
-        g.gain.setValueAtTime(0, t0);
-        g.gain.linearRampToValueAtTime(0.3, t0 + 0.02);
-        g.gain.linearRampToValueAtTime(0, t0 + noteLen * 0.95);
-        osc.connect(g).connect(ctx.destination);
-        osc.start(t0);
-        osc.stop(t0 + noteLen);
-      });
-    }
-    return await ctx.startRendering();
-  }
-
   function makeToneBuffer(ctx, freq, seconds = 3) {
     const len = Math.floor(ctx.sampleRate * seconds);
     const buffer = ctx.createBuffer(1, len, ctx.sampleRate);
     const data = buffer.getChannelData(0);
     for (let i = 0; i < len; i++) {
-      // Slightly textured tone (sine + soft harmonics) so it's not a pure annoying beep
+      // Pure sine — no harmonics. The FFT would reveal the frequency if harmonics were added.
       const t = i / ctx.sampleRate;
       const env = Math.min(1, t * 20) * Math.min(1, (seconds - t) * 8);
-      data[i] = env * (
-        Math.sin(2 * Math.PI * freq * t) * 0.6 +
-        Math.sin(2 * Math.PI * freq * 2 * t) * 0.15 +
-        Math.sin(2 * Math.PI * freq * 3 * t) * 0.05
-      ) * 0.5;
+      data[i] = env * Math.sin(2 * Math.PI * freq * t) * 0.5;
     }
     return buffer;
   }
@@ -337,6 +278,9 @@
     el.btnPlay.textContent = '▶ Play loop';
     el.btnPlay.classList.remove('playing');
     el.npDot.classList.remove('live');
+    // Disable and reset toggle — it only makes sense while audio is playing
+    el.btnToggleVersion.disabled = true;
+    el.btnToggleVersion.textContent = 'A/B: Boosted';
   }
 
   // ===========================================================
@@ -376,8 +320,12 @@
       canvasCtx.stroke();
     });
 
+    // For sine tone, hide the live spectrum until reveal — the FFT spike would give away the frequency.
+    const isSineTone = currentLevel().sourceType === 'synth-tone';
+    const suppressLive = isSineTone && !state.round.resolved;
+
     // live analyser data
-    if ((state.analyser || state.preAnalyser) && state.isPlaying) {
+    if (!suppressLive && (state.analyser || state.preAnalyser) && state.isPlaying) {
       const analyserToUse = state.round.resolved ? state.analyser : state.preAnalyser;
       if (analyserToUse) {
         const bufferLen = analyserToUse.frequencyBinCount;
@@ -409,13 +357,21 @@
         canvasCtx.stroke();
       }
     } else {
-      // flat idle line
+      // flat idle line (also used when sine spectrum is suppressed)
       canvasCtx.strokeStyle = 'rgba(255,255,255,0.12)';
       canvasCtx.lineWidth = 1.5 * dpr;
       canvasCtx.beginPath();
       canvasCtx.moveTo(0, h * 0.7);
       canvasCtx.lineTo(w, h * 0.7);
       canvasCtx.stroke();
+      // "Listening…" label while sine is playing but spectrum is hidden
+      if (suppressLive && state.isPlaying) {
+        canvasCtx.fillStyle = 'rgba(255,255,255,0.2)';
+        canvasCtx.font = `${12 * dpr}px sans-serif`;
+        canvasCtx.textAlign = 'center';
+        canvasCtx.fillText('Spectrum hidden — use your ears', w / 2, h / 2);
+        canvasCtx.textAlign = 'left';
+      }
     }
 
     // guess marker
@@ -459,11 +415,27 @@
   }
 
   function buildTicks() {
-    const ticks = [20, 50, 100, 200, 500, '1k', '2k', '5k', '10k', '20k'];
+    const ticks = [
+      { freq: 20,    label: '20' },
+      { freq: 50,    label: '50' },
+      { freq: 100,   label: '100' },
+      { freq: 200,   label: '200' },
+      { freq: 500,   label: '500' },
+      { freq: 1000,  label: '1k' },
+      { freq: 2000,  label: '2k' },
+      { freq: 5000,  label: '5k' },
+      { freq: 10000, label: '10k' },
+      { freq: 20000, label: '20k' },
+    ];
     el.spectrumTicks.innerHTML = '';
-    ticks.forEach(t => {
+    ticks.forEach(({ freq, label }, i) => {
+      const pct = freqToX(freq, 1) * 100; // log-scale 0–100%
       const span = document.createElement('span');
-      span.textContent = t;
+      span.textContent = label;
+      span.style.left = pct.toFixed(2) + '%';
+      // Avoid overflow at edges
+      if (i === 0) span.style.transform = 'translateX(0)';
+      else if (i === ticks.length - 1) span.style.transform = 'translateX(-100%)';
       el.spectrumTicks.appendChild(span);
     });
   }
@@ -492,10 +464,13 @@
   function selectLevel(i) {
     state.levelIdx = i;
     stopPlayback();
+    const lvl = currentLevel();
+    // Init difficulty to first preset for levels that have them
+    state.selectedDifficulty = lvl.difficulties ? lvl.difficulties[0] : null;
     renderLevelNav();
-    el.levelName.textContent = currentLevel().name;
-    el.levelHint.textContent = currentLevel().hint;
-    el.gainGuessWrap.style.display = currentLevel().guessGain ? 'block' : 'none';
+    el.levelName.textContent = lvl.name;
+    el.levelHint.textContent = lvl.hint;
+    el.gainGuessWrap.style.display = lvl.guessGain ? 'block' : 'none';
     renderSourceControls();
     resetRoundUI();
   }
@@ -588,32 +563,41 @@
           el.loopStart.value = Math.min(track.autoStart, maxStart).toFixed(1);
         }
       }
-    } else if (lvl.sourceType === 'synth-instrument') {
-      const list = document.createElement('div');
-      list.className = 'builtin-list';
-      [['pad', 'Sustained pad', 'sawtooth, low harmonics'], ['pluck', 'Pluck / triangle', 'short decay'], ['bass', 'Square bass', 'sub-heavy']].forEach(([key, label, tag]) => {
-        const item = document.createElement('div');
-        item.className = 'builtin-item';
-        item.dataset.key = key;
-        item.innerHTML = `<span>${label}</span><span class="bi-tag">${tag}</span>`;
-        item.addEventListener('click', () => {
-          list.querySelectorAll('.builtin-item').forEach(n => n.classList.remove('selected'));
-          item.classList.add('selected');
-          state.selectedInstrument = key;
-          prepareRound();
-        });
-        list.appendChild(item);
-      });
-      el.sourceControls.appendChild(list);
-      list.firstChild.classList.add('selected');
-      state.selectedInstrument = 'pad';
     } else {
+      // synth-pink or synth-tone: show a short source note
       const note = document.createElement('div');
       note.className = 'hint';
       note.textContent = lvl.sourceType === 'synth-pink'
-        ? 'Source: generated pink noise. Click "New round" (the play button) to begin.'
-        : 'Source: a single synthesized tone. Click play and try to recall its pitch.';
+        ? 'Source: generated pink noise. Press Play to start a round — it auto-plays each new round after that.'
+        : 'Source: a single pure sine tone. No spectrum shown until you submit — train your ear, not your eyes.';
       el.sourceControls.appendChild(note);
+    }
+
+    // Difficulty selector for levels that have preset gain chips
+    if (lvl.difficulties) {
+      const wrap = document.createElement('div');
+      wrap.className = 'difficulty-selector';
+      const label = document.createElement('div');
+      label.className = 'diff-label';
+      label.textContent = 'Boost amount';
+      wrap.appendChild(label);
+      const chips = document.createElement('div');
+      chips.className = 'diff-chips';
+      lvl.difficulties.forEach((d) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'diff-chip' + (state.selectedDifficulty === d ? ' active' : '');
+        btn.innerHTML = `<span class="dc-label">${d.label}</span><span class="dc-tag">${d.tag}</span>`;
+        btn.addEventListener('click', () => {
+          state.selectedDifficulty = d;
+          chips.querySelectorAll('.diff-chip').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          // Don't auto-restart — change takes effect on next round
+        });
+        chips.appendChild(btn);
+      });
+      wrap.appendChild(chips);
+      el.sourceControls.appendChild(wrap);
     }
   }
 
@@ -826,11 +810,14 @@
   async function prepareRound() {
     const lvl = currentLevel();
     state.round.targetFreq = randRange(lvl.freqRange[0], lvl.freqRange[1]);
-    state.round.targetGain = randRange(lvl.gainRange[0], lvl.gainRange[1]);
+    // Use fixed difficulty gain if available, otherwise randomise within gainRange
+    state.round.targetGain = state.selectedDifficulty
+      ? state.selectedDifficulty.gain
+      : randRange(lvl.gainRange[0], lvl.gainRange[1]);
     state.round.targetQ = randRange(lvl.qRange[0], lvl.qRange[1]);
     state.round.guessFreq = null;
     state.round.guessGain = null;
-    state.round.resolved = false; // ensure visualizer uses pre-filter analyser until submit
+    state.round.resolved = false;
     state.isBoostedVersion = true;
 
     const ctx = ensureAudioCtx();
@@ -839,15 +826,13 @@
       state.currentBuffer = makePinkNoiseBuffer(ctx, 6);
     } else if (lvl.sourceType === 'synth-tone') {
       state.currentBuffer = makeToneBuffer(ctx, state.round.targetFreq, 3);
-    } else if (lvl.sourceType === 'synth-instrument') {
-      state.currentBuffer = await makeInstrumentBuffer(state.selectedInstrument || 'pad', 4);
     } else if (lvl.sourceType === 'user-file') {
       if (!state.userBuffer) { state.currentBuffer = null; return; }
       state.currentBuffer = extractLoopFromUser(14);
     }
 
     el.btnPlay.disabled = !state.currentBuffer;
-    el.btnToggleVersion.disabled = !state.currentBuffer;
+    el.btnToggleVersion.disabled = true; // only enable once playback actually starts
     el.btnSubmit.disabled = !state.currentBuffer;
   }
 
@@ -959,6 +944,20 @@
   // EVENT WIRING
   // ===========================================================
 
+  // Start playback of state.currentBuffer. Returns true if successful.
+  // Must be called inside a user-gesture context (click handler) for browser autoplay policy.
+  function startPlayback() {
+    if (!state.currentBuffer) return false;
+    buildGraphAndPlay(state.currentBuffer);
+    el.btnPlay.textContent = '■ Stop';
+    el.btnPlay.classList.add('playing');
+    el.npDot.classList.add('live');
+    el.npLabel.textContent = `Playing — ${currentLevel().name} (boosted version)`;
+    el.btnToggleVersion.disabled = false;
+    el.btnToggleVersion.textContent = 'A/B: Boosted';
+    return true;
+  }
+
   el.freqSlider.addEventListener('input', () => {
     const f = sliderToFreq(parseFloat(el.freqSlider.value));
     el.guessReadout.textContent = fmtFreq(f);
@@ -977,12 +976,7 @@
       await prepareRound();
       if (!state.currentBuffer) return;
     }
-    buildGraphAndPlay(state.currentBuffer);
-    el.btnPlay.textContent = '■ Stop';
-    el.btnPlay.classList.add('playing');
-    el.npDot.classList.add('live');
-    el.npLabel.textContent = `Playing — ${currentLevel().name} (boosted version)`;
-    el.btnToggleVersion.textContent = 'A/B: Boosted';
+    startPlayback();
   });
 
   el.btnToggleVersion.addEventListener('click', () => {
@@ -1003,7 +997,10 @@
     el.btnSubmit.style.display = 'block';
     el.btnSubmit.disabled = true;
     await prepareRound();
-    el.npLabel.textContent = 'Ready — press play';
+    // Auto-play — this click IS a user gesture so browser allows audio start
+    if (!startPlayback()) {
+      el.npLabel.textContent = 'No source loaded — load a file first';
+    }
   });
 
   el.loopStart.addEventListener('change', () => { prepareRound(); });
@@ -1013,12 +1010,17 @@
   // ===========================================================
 
   function init() {
+    // Init difficulty from first level
+    const lvl = currentLevel();
+    state.selectedDifficulty = lvl.difficulties ? lvl.difficulties[0] : null;
     renderLevelNav();
     buildTicks();
     resizeCanvas();
-    el.levelName.textContent = currentLevel().name;
-    el.levelHint.textContent = currentLevel().hint;
-    el.gainGuessWrap.style.display = currentLevel().guessGain ? 'block' : 'none';
+    // Re-run after first paint in case layout wasn't fully settled at DOMContentLoaded
+    requestAnimationFrame(resizeCanvas);
+    el.levelName.textContent = lvl.name;
+    el.levelHint.textContent = lvl.hint;
+    el.gainGuessWrap.style.display = lvl.guessGain ? 'block' : 'none';
     renderSourceControls();
     el.guessReadout.textContent = fmtFreq(sliderToFreq(parseFloat(el.freqSlider.value)));
     el.gainReadout.textContent = parseFloat(el.gainSlider.value).toFixed(1) + ' dB';

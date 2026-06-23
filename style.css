@@ -434,12 +434,19 @@ button{ font-family: inherit; }
 }
 
 .spectrum-ticks{
-  display:flex;
-  justify-content: space-between;
+  position: relative;
+  height: 22px;
   font-family: var(--mono);
   font-size: 10px;
   color: var(--text-mute);
-  padding: 4px 2px 18px;
+  margin-top: 4px;
+}
+
+.spectrum-ticks span{
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
 }
 
 .freq-readout{
@@ -596,6 +603,64 @@ button{ font-family: inherit; }
   line-height: 1.5;
 }
 
+/* ===================== DIFFICULTY SELECTOR ===================== */
+
+.difficulty-selector{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.diff-label{
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-mute);
+}
+
+.diff-chips{
+  display: flex;
+  gap: 6px;
+}
+
+.diff-chip{
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 9px 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  font-family: var(--sans);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.diff-chip:hover{ border-color: #3A3D42; }
+
+.diff-chip.active{
+  border-color: var(--amber);
+  background: linear-gradient(180deg, rgba(255,106,61,0.10), rgba(255,106,61,0.02));
+}
+
+.dc-label{
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.diff-chip.active .dc-label{ color: var(--amber); }
+
+.dc-tag{
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-mute);
+}
+
+.diff-chip.active .dc-tag{ color: var(--amber-dim); color: #c4633c; }
+
 /* ===================== FOOTER ===================== */
 
 .rack-footer{
@@ -610,3 +675,74 @@ button{ font-family: inherit; }
 ::-webkit-scrollbar{ height: 8px; width: 8px; }
 ::-webkit-scrollbar-track{ background: transparent; }
 ::-webkit-scrollbar-thumb{ background: var(--hairline); border-radius: 4px; }
+
+/* ===================== MOBILE / SMALL SCREEN ===================== */
+
+@media (max-width: 600px){
+  .rack{
+    padding: 10px 10px 28px;
+  }
+
+  .strip{
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  .brand-text h1{ font-size: 15px; }
+  .brand-text p{ display: none; } /* hide tagline on small phones */
+
+  .session-stats{ gap: 16px; }
+  .stat-value{ font-size: 15px; }
+
+  /* Narrower level chips that stack-scroll horizontally */
+  .level-chip{
+    min-width: 108px;
+    padding: 8px 12px;
+  }
+
+  .panel{
+    padding: 14px;
+  }
+
+  /* Shorter spectrum on phones — enough height to be useful */
+  #spectrum-canvas{
+    height: 110px;
+  }
+
+  /* Ticks: hide every other label to avoid crowding on ~320–375px screens */
+  .spectrum-ticks span:nth-child(2),  /* 50 Hz  */
+  .spectrum-ticks span:nth-child(4),  /* 200 Hz */
+  .spectrum-ticks span:nth-child(6),  /* 1k     */
+  .spectrum-ticks span:nth-child(8),  /* 5k     */
+  .spectrum-ticks span:nth-child(10){ /* 20k — kept via last-child rule below */
+    display: none;
+  }
+  /* Always keep 20 Hz and 20k labels */
+  .spectrum-ticks span:first-child,
+  .spectrum-ticks span:last-child{
+    display: block !important;
+  }
+
+  .freq-readout-value{ font-size: 22px; }
+
+  /* Make sliders taller for easier touch */
+  .freq-slider{
+    height: 10px;
+    margin-bottom: 14px;
+  }
+  .freq-slider::-webkit-slider-thumb{
+    width: 24px;
+    height: 24px;
+  }
+  .freq-slider::-moz-range-thumb{
+    width: 24px;
+    height: 24px;
+  }
+
+  .diff-chips{ flex-wrap: wrap; }
+  .diff-chip{ min-width: calc(50% - 3px); }
+
+  .btn{ padding: 12px 14px; font-size: 14px; }
+
+  .log-list{ max-height: 300px; }
+}
