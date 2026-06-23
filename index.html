@@ -57,7 +57,14 @@
 
       <div class="transport">
         <button id="btn-play" class="btn btn-play" disabled>▶ Play loop</button>
+        <!-- Pre-reveal A/B toggle (pink noise) + post-reveal pitch compare (sine tone) -->
         <button id="btn-toggle-version" class="btn btn-ghost" disabled>A/B: Boosted</button>
+        <!-- Post-reveal 3-way compare (pink noise / cuts) — hidden until submit -->
+        <div id="compare-group" class="compare-group" style="display:none;">
+          <button id="btn-cmp-flat"   class="btn btn-cmp cmp-flat">Flat</button>
+          <button id="btn-cmp-guess"  class="btn btn-cmp cmp-guess" disabled>My guess</button>
+          <button id="btn-cmp-actual" class="btn btn-cmp cmp-actual">Actual</button>
+        </div>
         <div class="loop-range" id="loop-range-wrap" style="display:none;">
           <label>Loop window (auto-picked — drag to adjust)
             <input type="range" id="loop-start" min="0" max="100" value="0" step="0.5">
@@ -70,7 +77,13 @@
 
     <!-- ===== CENTER: SPECTRUM GUESS DIAL ===== -->
     <section class="panel guess-panel">
-      <h2 class="panel-title">Where's the boost?</h2>
+      <h2 class="panel-title" id="guess-panel-title">Where's the boost?</h2>
+
+      <!-- Game HUD: shown only when a game is active -->
+      <div id="game-hud" class="game-hud" style="display:none;">
+        <span id="game-round-label">Round 1 / 10</span>
+        <div id="game-dots" class="game-dots"></div>
+      </div>
 
       <div class="spectrum-wrap">
         <canvas id="spectrum-canvas" width="900" height="160" aria-label="Frequency spectrum, 20 Hz to 20 kHz, logarithmic"></canvas>
@@ -80,6 +93,7 @@
       <div class="freq-readout">
         <span class="freq-readout-label">your guess</span>
         <span class="freq-readout-value" id="guess-readout">— Hz</span>
+        <span class="freq-readout-note" id="guess-note"></span>
       </div>
 
       <input type="range" id="freq-slider" class="freq-slider" min="0" max="1000" value="500" step="1">
@@ -94,6 +108,7 @@
       <div class="result" id="result-panel" aria-live="polite"></div>
 
       <button id="btn-next" class="btn btn-next" style="display:none;">Next round →</button>
+      <button id="btn-start-game" class="btn btn-start-game">▶ Start Game — 10 rounds</button>
     </section>
 
     <!-- ===== RIGHT: LOG / HISTORY ===== -->
@@ -109,6 +124,17 @@
     <p>Runs entirely in your browser. No audio is uploaded anywhere — local files stay local. <a href="https://github.com/" id="repo-link" target="_blank" rel="noopener">Source</a></p>
   </footer>
 
+</div>
+
+<!-- Game over overlay -->
+<div id="game-overlay" class="game-overlay" style="display:none;">
+  <div class="game-over-card">
+    <div id="game-over-content"></div>
+    <div class="go-buttons">
+      <button id="btn-play-again" class="btn btn-play-again">▶ Play Again</button>
+      <button id="btn-free-practice" class="btn btn-ghost">← Free Practice</button>
+    </div>
+  </div>
 </div>
 
 <script src="app.js"></script>
